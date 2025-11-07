@@ -1,0 +1,72 @@
+/* 基础样式与布局 */
+:root { --bg: #0f1115; --panel: #151823; --text: #e6e8ee; --muted: #9aa3b2; --acc: #4f7cff; --ok: #3ccf91; --err: #ff5d5d; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); }
+
+.app-header { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid #1f2430; position: sticky; top: 0; z-index: 10; }
+.brand { font-weight: 700; letter-spacing: 0.5px; }
+.breadcrumbs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; opacity: 0.95; }
+.breadcrumbs a, .breadcrumbs span { color: var(--muted); text-decoration: none; }
+.breadcrumbs a:hover { color: var(--text); text-decoration: underline; }
+.spacer { flex: 1; }
+.test-rpc-btn { padding: 8px 16px; border-radius: 6px; background: #162037; border: 1px solid #232839; color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; }
+.test-rpc-btn:hover { background: #1a2847; }
+.test-rpc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.add-download-btn { padding: 8px 16px; border-radius: 6px; background: var(--acc); border: none; color: white; cursor: pointer; font-size: 14px; font-weight: 500; }
+.add-download-btn:hover { background: #6591ff; }
+
+.app-main { display: grid; grid-template-columns: 1fr 320px; gap: 0; height: calc(100vh - 56px); }
+.sidebar { border-left: 1px solid #1f2430; background: #0f1117; display: flex; flex-direction: column; min-width: 260px; }
+.toolbar { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid #1f2430; }
+.toolbar input[type="search"] { flex: 1; padding: 8px 10px; background: #0d0f14; border: 1px solid #232839; border-radius: 6px; color: var(--text); }
+.toolbar button { padding: 8px 10px; border-radius: 6px; background: #162037; border: 1px solid #232839; color: var(--text); cursor: pointer; }
+.toolbar button:hover { background: #1a2847; }
+
+.file-list { list-style: none; margin: 0; padding: 6px 0; overflow: auto; flex: 1; }
+.file-list li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px dashed #1b2030; cursor: pointer; }
+.file-list li:hover { background: rgba(79,124,255,0.08); }
+.file-list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-list .tag { padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #c9d1e5; background: #1b2030; }
+.file-list .size { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.empty-tip { padding: 12px; color: var(--muted); }
+
+.player { display: flex; flex-direction: column; }
+.player-header { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid #1f2430; background: #0f1117; }
+.current-file { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.download-link { color: var(--acc); text-decoration: none; }
+.download-link:hover { text-decoration: underline; }
+
+.video-wrap { position: relative; display: flex; align-items: center; justify-content: center; padding: 12px; height: 100%; }
+video { width: 100%; height: 100%; background: #000; max-height: calc(100vh - 56px - 48px - 24px); }
+.video-tip { position: absolute; color: var(--muted); }
+.error { color: var(--err); padding: 8px 12px; }
+
+/* Aria2 配置对话框 */
+.modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { background: var(--panel); border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #1f2430; }
+.modal-header h3 { margin: 0; font-size: 18px; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer; padding: 0; width: 32px; height: 32px; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.modal-body label { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.modal-body label span { color: var(--muted); font-size: 14px; }
+.modal-body input { padding: 10px 12px; background: #0d0f14; border: 1px solid #232839; border-radius: 6px; color: var(--text); font-size: 14px; }
+.modal-body input:focus { outline: none; border-color: var(--acc); }
+.modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+.btn-primary, .btn-secondary { flex: 1; padding: 10px; border-radius: 6px; font-size: 14px; cursor: pointer; border: none; }
+.btn-primary { background: var(--acc); color: white; }
+.btn-primary:hover { background: #6591ff; }
+.btn-secondary { background: #162037; color: var(--text); border: 1px solid #232839; }
+.btn-secondary:hover { background: #1a2847; }
+.status-msg { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 14px; }
+.status-msg.success { background: rgba(60, 207, 145, 0.15); color: var(--ok); }
+.status-msg.error { background: rgba(255, 93, 93, 0.15); color: var(--err); }
+
+@media (max-width: 960px) {
+  .app-main { grid-template-columns: 1fr; }
+  .sidebar { height: 40vh; }
+  .player { height: 60vh; }
+  video { max-height: 100%; }
+} 

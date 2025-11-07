@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的网盘</title>
+  <link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">我的网盘</div>
+    <nav id="breadcrumbs" class="breadcrumbs"></nav>
+    <div class="spacer"></div>
+    <button id="test-rpc-btn" class="test-rpc-btn" title="测试 Aria2 连接">🔗 测试连接</button>
+    <button id="add-download-btn" class="add-download-btn" title="添加下载任务">+ 添加下载</button>
+  </header>
+
+  <main class="app-main">
+    <section class="player">
+      <div class="player-header">
+        <div id="current-file" class="current-file" title="当前播放文件">未选择文件</div>
+        <a id="download-link" class="download-link" href="#" download hidden>下载</a>
+      </div>
+      <div class="video-wrap">
+        <video id="video" controls preload="metadata" playsinline></video>
+        <div id="video-tip" class="video-tip">请选择一个支持的视频文件进行播放</div>
+      </div>
+      <div id="error" class="error" hidden></div>
+    </section>
+
+    <section class="sidebar">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="搜索文件/目录..." autocomplete="off" />
+        <button id="go-up" title="返回上级">↑ 上一级</button>
+      </div>
+      <ul id="file-list" class="file-list" aria-label="文件与目录列表"></ul>
+      <div id="empty-tip" class="empty-tip" hidden>该目录为空</div>
+    </section>
+  </main>
+
+  <!-- 添加下载任务对话框 -->
+  <div id="add-download-modal" class="modal" hidden style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>添加下载任务</h3>
+        <button id="add-download-close" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>
+          <span>下载链接：</span>
+          <input id="download-url" type="text" placeholder="https://example.com/file.mp4" />
+        </label>
+        <label>
+          <span>保存路径：</span>
+          <input id="download-path" type="text" placeholder="留空保存到根目录" />
+          <small style="color: var(--muted); font-size: 12px;">相对路径，如：videos/movies（留空保存到当前浏览目录）</small>
+        </label>
+        <label>
+          <span>文件名 (可选)：</span>
+          <input id="download-filename" type="text" placeholder="留空使用原文件名" />
+        </label>
+        <div class="modal-actions">
+          <button id="download-submit" class="btn-primary">开始下载</button>
+        </div>
+        <div id="download-status" class="status-msg" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <noscript>
+    需要启用 JavaScript 才能浏览目录与播放视频。
+  </noscript>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.14/dist/hls.min.js"></script>
+  <script>
+    window.APP_CONFIG = { BROWSE_ROOT: '/files/' };
+  </script>
+  <!-- 按依赖顺序加载模块 -->
+  <script src="./assets/config.js"></script>
+  <script src="./assets/utils.js"></script>
+  <script src="./assets/directory.js"></script>
+  <script src="./assets/video.js"></script>
+  <script src="./assets/aria2.js"></script>
+  <script src="./assets/app.js"></script>
+</body>
+</html> 
