@@ -11,6 +11,7 @@
     <div class="brand">我的网盘</div>
     <nav id="breadcrumbs" class="breadcrumbs"></nav>
     <div class="spacer"></div>
+    <span id="test-rpc-status" class="test-rpc-status" hidden></span>
     <button id="test-rpc-btn" class="test-rpc-btn" title="测试 Aria2 连接">🔗 测试连接</button>
     <button id="add-download-btn" class="add-download-btn" title="添加下载任务">+ 添加下载</button>
   </header>
@@ -33,6 +34,15 @@
         <input id="search" type="search" placeholder="搜索文件/目录..." autocomplete="off" />
         <button id="go-up" title="返回上级">↑ 上一级</button>
       </div>
+      
+      <!-- 下载进度区域 -->
+      <div id="download-progress-container" class="download-progress-container" hidden>
+        <div class="download-progress-header">
+          <span>📥 正在下载</span>
+        </div>
+        <div id="download-progress-list" class="download-progress-list"></div>
+      </div>
+      
       <ul id="file-list" class="file-list" aria-label="文件与目录列表"></ul>
       <div id="empty-tip" class="empty-tip" hidden>该目录为空</div>
     </section>

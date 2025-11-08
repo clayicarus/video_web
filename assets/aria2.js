@@ -4,6 +4,9 @@
 (function() {
   // 添加下载任务相关元素
   const testRpcBtn = document.getElementById('test-rpc-btn');
+  const testRpcStatus = document.getElementById('test-rpc-status');
+  const downloadProgressContainer = document.getElementById('download-progress-container');
+  const downloadProgressList = document.getElementById('download-progress-list');
   const addDownloadBtn = document.getElementById('add-download-btn');
   const addDownloadModal = document.getElementById('add-download-modal');
   const addDownloadClose = document.getElementById('add-download-close');
@@ -12,6 +15,9 @@
   const downloadFilenameInput = document.getElementById('download-filename');
   const downloadSubmitBtn = document.getElementById('download-submit');
   const downloadStatusEl = document.getElementById('download-status');
+
+  // 轮询相关变量
+  let progressInterval = null;
 
   // ========== 硬编码配置 ==========
   const ARIA2_CONFIG = {
@@ -66,6 +72,104 @@
       return { success: true, version: version.version };
     } catch (err) {
       return { success: false, error: err.message };
+    }
+  }
+
+  // 获取活动下载任务
+  async function getActiveDownloads() {
+    try {
+      const downloads = await rpcCall('aria2.tellActive');
+      return downloads || [];
+    } catch (err) {
+      console.error('获取下载任务失败:', err);
+      return [];
+    }
+  }
+
+  // 格式化文件大小
+  function formatSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+  }
+
+  // 格式化速度
+  function formatSpeed(bytesPerSec) {
+    return formatSize(bytesPerSec) + '/s';
+  }
+
+  // 更新下载进度显示
+  async function updateDownloadProgress() {
+    const downloads = await getActiveDownloads();
+    
+    if (downloads.length === 0) {
+      // 没有活动下载，隐藏进度区域
+      if (downloadProgressContainer) {
+        downloadProgressContainer.hidden = true;
+      }
+      return;
+    }
+
+    // 显示进度区域
+    if (downloadProgressContainer) {
+      downloadProgressContainer.hidden = false;
+    }
+
+    // 生成下载项的 HTML
+    if (downloadProgressList) {
+      downloadProgressList.innerHTML = downloads.map(download => {
+        const totalLength = parseInt(download.totalLength) || 0;
+        const completedLength = parseInt(download.completedLength) || 0;
+        const downloadSpeed = parseInt(download.downloadSpeed) || 0;
+        
+        const percentage = totalLength > 0 ? Math.round((completedLength / totalLength) * 100) : 0;
+        const filename = download.files && download.files[0] && download.files[0].path 
+          ? download.files[0].path.split('/').pop() 
+          : '下载中...';
+
+        return `
+          <div class="download-progress-item">
+            <div class="download-filename" title="${filename}">${filename}</div>
+            <div class="download-stats">
+              <span class="download-percentage">${percentage}% (${formatSize(completedLength)} / ${formatSize(totalLength)})</span>
+              <span class="download-speed">${formatSpeed(downloadSpeed)}</span>
+            </div>
+            <div class="download-progress-bar">
+              <div class="download-progress-fill" style="width: ${percentage}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 启动进度监控
+  function startProgressMonitor() {
+    if (progressInterval) {
+      return; // 已经在运行
+    }
+    
+    // 立即执行一次
+    updateDownloadProgress();
+    
+    // 每2秒更新一次
+    progressInterval = setInterval(updateDownloadProgress, 2000);
+  }
+
+  // 停止进度监控
+  function stopProgressMonitor() {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+      progressInterval = null;
+    }
+    
+    if (downloadProgressContainer) {
+      downloadProgressContainer.hidden = true;
+    }
+    if (downloadProgressList) {
+      downloadProgressList.innerHTML = '';
     }
   }
 
@@ -155,24 +259,30 @@
     testRpcBtn.addEventListener('click', async () => {
       testRpcBtn.disabled = true;
       testRpcBtn.textContent = '⏳ 测试中...';
+      
+      // 隐藏之前的状态提示
+      if (testRpcStatus) {
+        testRpcStatus.hidden = true;
+      }
 
       const result = await testConnection();
 
-      if (!result.success) {
-        testRpcBtn.textContent = '❌ 连接失败';
-        window.VideoModule.showError('Aria2 连接失败: ' + result.error);
+      testRpcBtn.textContent = '🔗 测试连接';
+      testRpcBtn.disabled = false;
+
+      if (testRpcStatus) {
+        if (!result.success) {
+          testRpcStatus.textContent = `❌ 连接失败: ${result.error}`;
+          testRpcStatus.className = 'test-rpc-status error';
+        } else {
+          testRpcStatus.textContent = `✅ 成功！版本: ${result.version}`;
+          testRpcStatus.className = 'test-rpc-status success';
+        }
+        testRpcStatus.hidden = false;
+        
+        // 3秒后自动隐藏
         setTimeout(() => {
-          testRpcBtn.textContent = '🔗 测试连接';
-          testRpcBtn.disabled = false;
-          window.VideoModule.clearError();
-        }, 3000);
-      } else {
-        testRpcBtn.textContent = '✅ 连接成功';
-        window.VideoModule.showError(`✓ Aria2 连接成功！版本: ${result.version}`);
-        setTimeout(() => {
-          testRpcBtn.textContent = '🔗 测试连接';
-          testRpcBtn.disabled = false;
-          window.VideoModule.clearError();
+          testRpcStatus.hidden = true;
         }, 3000);
       }
     });
@@ -237,6 +347,10 @@
 
       if (result.success) {
         showDownloadStatus(`✓ 下载任务已添加 (GID: ${result.gid})`, true);
+        
+        // 启动进度监控
+        startProgressMonitor();
+        
         setTimeout(() => {
           closeDownloadModal();
         }, 2000);
@@ -252,7 +366,12 @@
   // 导出到全局
   window.Aria2Module = {
     testConnection,
-    sendCustomDownload
+    sendCustomDownload,
+    startProgressMonitor,
+    stopProgressMonitor
   };
+
+  // 页面加载时启动监控（如果有活动下载）
+  startProgressMonitor();
 })();
 
