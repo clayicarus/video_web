@@ -75,11 +75,49 @@
     }
   }
 
-  // 获取活动下载任务
+  // 暂停下载
+  async function pauseDownload(gid) {
+    try {
+      await rpcCall('aria2.pause', [gid]);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 恢复下载
+  async function unpauseDownload(gid) {
+    try {
+      await rpcCall('aria2.unpause', [gid]);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 取消下载
+  async function removeDownload(gid) {
+    try {
+      await rpcCall('aria2.remove', [gid]);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 获取所有未完成的下载任务（包括活动、等待、暂停）
   async function getActiveDownloads() {
     try {
-      const downloads = await rpcCall('aria2.tellActive');
-      return downloads || [];
+      // 同时获取活动和等待中的任务
+      const [active, waiting] = await Promise.all([
+        rpcCall('aria2.tellActive'),
+        rpcCall('aria2.tellWaiting', [0, 999])
+      ]);
+      
+      // 合并所有任务
+      const allDownloads = [...(active || []), ...(waiting || [])];
+      
+      return allDownloads;
     } catch (err) {
       console.error('获取下载任务失败:', err);
       return [];
@@ -117,31 +155,164 @@
       downloadProgressContainer.hidden = false;
     }
 
-    // 生成下载项的 HTML
-    if (downloadProgressList) {
-      downloadProgressList.innerHTML = downloads.map(download => {
-        const totalLength = parseInt(download.totalLength) || 0;
-        const completedLength = parseInt(download.completedLength) || 0;
-        const downloadSpeed = parseInt(download.downloadSpeed) || 0;
-        
-        const percentage = totalLength > 0 ? Math.round((completedLength / totalLength) * 100) : 0;
-        const filename = download.files && download.files[0] && download.files[0].path 
-          ? download.files[0].path.split('/').pop() 
-          : '下载中...';
+    if (!downloadProgressList) return;
 
-        return `
-          <div class="download-progress-item">
-            <div class="download-filename" title="${filename}">${filename}</div>
-            <div class="download-stats">
-              <span class="download-percentage">${percentage}% (${formatSize(completedLength)} / ${formatSize(totalLength)})</span>
-              <span class="download-speed">${formatSpeed(downloadSpeed)}</span>
-            </div>
-            <div class="download-progress-bar">
-              <div class="download-progress-fill" style="width: ${percentage}%"></div>
-            </div>
-          </div>
+    // 获取当前已有的下载项
+    const existingItems = downloadProgressList.querySelectorAll('.download-progress-item');
+    const existingGids = new Set();
+    existingItems.forEach(item => {
+      const gid = item.dataset.gid;
+      if (gid) existingGids.add(gid);
+    });
+
+    // 处理每个下载任务
+    downloads.forEach(download => {
+      const gid = download.gid;
+      const status = download.status;
+      const totalLength = parseInt(download.totalLength) || 0;
+      const completedLength = parseInt(download.completedLength) || 0;
+      const downloadSpeed = parseInt(download.downloadSpeed) || 0;
+      
+      const percentage = totalLength > 0 ? Math.round((completedLength / totalLength) * 100) : 0;
+      const filename = download.files && download.files[0] && download.files[0].path 
+        ? download.files[0].path.split('/').pop() 
+        : '下载中...';
+
+      // 查找是否已存在该下载项
+      let itemEl = downloadProgressList.querySelector(`.download-progress-item[data-gid="${gid}"]`);
+      
+      if (!itemEl) {
+        // 不存在，创建新的下载项
+        itemEl = createDownloadItem(gid, filename, status, percentage, completedLength, totalLength, downloadSpeed);
+        downloadProgressList.appendChild(itemEl);
+      } else {
+        // 已存在，只更新数据
+        updateDownloadItem(itemEl, status, percentage, completedLength, totalLength, downloadSpeed);
+      }
+      
+      existingGids.delete(gid);
+    });
+
+    // 移除已完成或已取消的任务
+    existingGids.forEach(gid => {
+      const itemEl = downloadProgressList.querySelector(`.download-progress-item[data-gid="${gid}"]`);
+      if (itemEl) {
+        itemEl.remove();
+      }
+    });
+  }
+
+  // 创建下载项元素
+  function createDownloadItem(gid, filename, status, percentage, completedLength, totalLength, downloadSpeed) {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'download-progress-item';
+    itemEl.dataset.gid = gid;
+
+    const statusText = status === 'paused' ? '已暂停' : '下载中';
+    const speedText = status === 'paused' ? '' : formatSpeed(downloadSpeed);
+
+    itemEl.innerHTML = `
+      <div class="download-header">
+        <div class="download-filename" title="${filename}">${filename}</div>
+        <div class="download-actions">
+          ${status === 'paused' 
+            ? `<button class="download-action-btn resume-btn" data-gid="${gid}" title="恢复">▶️</button>`
+            : `<button class="download-action-btn pause-btn" data-gid="${gid}" title="暂停">⏸️</button>`
+          }
+          <button class="download-action-btn cancel-btn" data-gid="${gid}" title="取消">❌</button>
+        </div>
+      </div>
+      <div class="download-stats">
+        <span class="download-percentage">${statusText} ${percentage}% (${formatSize(completedLength)} / ${formatSize(totalLength)})</span>
+        <span class="download-speed">${speedText}</span>
+      </div>
+      <div class="download-progress-bar">
+        <div class="download-progress-fill" style="width: ${percentage}%"></div>
+      </div>
+    `;
+
+    // 绑定按钮事件
+    bindItemButtons(itemEl, gid);
+
+    return itemEl;
+  }
+
+  // 更新下载项数据
+  function updateDownloadItem(itemEl, status, percentage, completedLength, totalLength, downloadSpeed) {
+    const statusText = status === 'paused' ? '已暂停' : '下载中';
+    const speedText = status === 'paused' ? '' : formatSpeed(downloadSpeed);
+
+    // 更新统计信息
+    const percentageEl = itemEl.querySelector('.download-percentage');
+    if (percentageEl) {
+      percentageEl.textContent = `${statusText} ${percentage}% (${formatSize(completedLength)} / ${formatSize(totalLength)})`;
+    }
+
+    const speedEl = itemEl.querySelector('.download-speed');
+    if (speedEl) {
+      speedEl.textContent = speedText;
+    }
+
+    // 更新进度条
+    const fillEl = itemEl.querySelector('.download-progress-fill');
+    if (fillEl) {
+      fillEl.style.width = `${percentage}%`;
+    }
+
+    // 更新按钮状态
+    const actionsEl = itemEl.querySelector('.download-actions');
+    const gid = itemEl.dataset.gid;
+    
+    if (actionsEl) {
+      const currentHasPauseBtn = actionsEl.querySelector('.pause-btn') !== null;
+      const shouldHavePauseBtn = status !== 'paused';
+
+      // 只在状态改变时更新按钮
+      if (currentHasPauseBtn !== shouldHavePauseBtn) {
+        actionsEl.innerHTML = `
+          ${status === 'paused' 
+            ? `<button class="download-action-btn resume-btn" data-gid="${gid}" title="恢复">▶️</button>`
+            : `<button class="download-action-btn pause-btn" data-gid="${gid}" title="暂停">⏸️</button>`
+          }
+          <button class="download-action-btn cancel-btn" data-gid="${gid}" title="取消">❌</button>
         `;
-      }).join('');
+        bindItemButtons(itemEl, gid);
+      }
+    }
+  }
+
+  // 为单个下载项绑定按钮事件
+  function bindItemButtons(itemEl, gid) {
+    // 暂停按钮
+    const pauseBtn = itemEl.querySelector('.pause-btn');
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', async () => {
+        pauseBtn.disabled = true;
+        await pauseDownload(gid);
+        updateDownloadProgress();
+      });
+    }
+
+    // 恢复按钮
+    const resumeBtn = itemEl.querySelector('.resume-btn');
+    if (resumeBtn) {
+      resumeBtn.addEventListener('click', async () => {
+        resumeBtn.disabled = true;
+        await unpauseDownload(gid);
+        updateDownloadProgress();
+      });
+    }
+
+    // 取消按钮
+    const cancelBtn = itemEl.querySelector('.cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async () => {
+        if (confirm('确定要取消这个下载任务吗？')) {
+          cancelBtn.disabled = true;
+          await removeDownload(gid);
+          updateDownloadProgress();
+        }
+      });
     }
   }
 
