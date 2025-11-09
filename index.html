@@ -15,6 +15,7 @@
     <span id="test-rpc-status" class="test-rpc-status" hidden></span>
     <button id="test-rpc-btn" class="test-rpc-btn" title="测试 Aria2 连接">🔗 测试连接</button>
     <button id="add-download-btn" class="add-download-btn" title="添加下载任务">+ 添加下载</button>
+    <button id="config-rpc-btn" class="config-rpc-btn" title="配置 Aria2 RPC">⚙️ 配置</button>
   </header>
 
   <main class="app-main">
@@ -48,6 +49,27 @@
       <div id="empty-tip" class="empty-tip" hidden>该目录为空</div>
     </section>
   </main>
+
+  <!-- RPC Secret 配置对话框 -->
+  <div id="config-rpc-modal" class="modal" hidden style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>配置 RPC Secret</h3>
+        <button id="config-rpc-close" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>
+          <span>RPC Secret：</span>
+          <input id="config-rpc-secret" type="password" placeholder="留空如果没有设置密钥" />
+          <small style="color: var(--muted); font-size: 12px;">Aria2 配置的 rpc-secret（如果 Aria2 没有设置密钥，留空即可）</small>
+        </label>
+        <div class="modal-actions">
+          <button id="config-rpc-save" class="btn-primary">保存</button>
+        </div>
+        <div id="config-status" class="status-msg" hidden></div>
+      </div>
+    </div>
+  </div>
 
   <!-- 添加下载任务对话框 -->
   <div id="add-download-modal" class="modal" hidden style="display: none;">

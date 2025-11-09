@@ -15,16 +15,52 @@
   const downloadFilenameInput = document.getElementById('download-filename');
   const downloadSubmitBtn = document.getElementById('download-submit');
   const downloadStatusEl = document.getElementById('download-status');
+  
+  // 配置相关元素
+  const configRpcBtn = document.getElementById('config-rpc-btn');
+  const configRpcModal = document.getElementById('config-rpc-modal');
+  const configRpcClose = document.getElementById('config-rpc-close');
+  const configRpcSecretInput = document.getElementById('config-rpc-secret');
+  const configRpcSaveBtn = document.getElementById('config-rpc-save');
+  const configStatusEl = document.getElementById('config-status');
 
   // 轮询相关变量
   let progressInterval = null;
 
-  // ========== 硬编码配置 ==========
+  // ========== 配置管理 ==========
+  const STORAGE_KEY = 'aria2_secret';
   const ARIA2_CONFIG = {
     url: 'http://localhost:6800/jsonrpc',
-    secret: '', // 如果需要密钥，在这里填写
+    secret: '',
     downloadRoot: "."
   };
+
+  // 加载配置
+  function loadConfig() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        ARIA2_CONFIG.secret = saved;
+      }
+    } catch (err) {
+      console.error('加载配置失败:', err);
+    }
+  }
+
+  // 保存配置
+  function saveConfig(secret) {
+    try {
+      ARIA2_CONFIG.secret = secret;
+      localStorage.setItem(STORAGE_KEY, secret);
+      return true;
+    } catch (err) {
+      console.error('保存配置失败:', err);
+      return false;
+    }
+  }
+
+  // 初始化时加载配置
+  loadConfig();
 
   // ========== RPC 调用 ==========
   async function rpcCall(method, params = []) {
@@ -512,6 +548,106 @@
 
       downloadSubmitBtn.disabled = false;
       downloadSubmitBtn.textContent = '开始下载';
+    });
+  }
+
+  // ========== 配置 RPC ==========
+  // 显示配置状态
+  function showConfigStatus(message, isSuccess) {
+    if (configStatusEl) {
+      configStatusEl.textContent = message;
+      configStatusEl.className = isSuccess ? 'status-msg success' : 'status-msg error';
+      configStatusEl.removeAttribute('hidden');
+      configStatusEl.style.display = 'block';
+    }
+  }
+
+  // 隐藏配置状态
+  function hideConfigStatus() {
+    if (configStatusEl) {
+      configStatusEl.setAttribute('hidden', '');
+      configStatusEl.style.display = 'none';
+    }
+  }
+
+  // 打开配置对话框
+  function openConfigModal() {
+    if (configRpcModal) {
+      // 填充当前 secret
+      if (configRpcSecretInput) configRpcSecretInput.value = ARIA2_CONFIG.secret;
+      
+      hideConfigStatus();
+      configRpcModal.removeAttribute('hidden');
+      configRpcModal.style.display = 'flex';
+      
+      // 聚焦到 secret 输入框
+      if (configRpcSecretInput) {
+        setTimeout(() => configRpcSecretInput.focus(), 100);
+      }
+    }
+  }
+
+  // 关闭配置对话框
+  function closeConfigModal() {
+    if (configRpcModal) {
+      configRpcModal.setAttribute('hidden', '');
+      configRpcModal.style.display = 'none';
+      hideConfigStatus();
+    }
+  }
+
+  // 打开配置对话框
+  if (configRpcBtn) {
+    configRpcBtn.addEventListener('click', openConfigModal);
+  }
+
+  // 关闭配置对话框
+  if (configRpcClose) {
+    configRpcClose.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeConfigModal();
+    });
+  }
+
+  // 点击对话框外部关闭
+  if (configRpcModal) {
+    configRpcModal.addEventListener('click', (e) => {
+      if (e.target === configRpcModal) {
+        closeConfigModal();
+      }
+    });
+    
+    // 阻止点击内容区域关闭对话框
+    const configModalContent = configRpcModal.querySelector('.modal-content');
+    if (configModalContent) {
+      configModalContent.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+  }
+
+  // ESC 键关闭配置对话框
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && configRpcModal && configRpcModal.style.display !== 'none' && !configRpcModal.hasAttribute('hidden')) {
+      closeConfigModal();
+    }
+  });
+
+  // 保存配置
+  if (configRpcSaveBtn) {
+    configRpcSaveBtn.addEventListener('click', () => {
+      const secret = (configRpcSecretInput?.value || '').trim();
+
+      // 保存配置（允许空 secret）
+      if (saveConfig(secret)) {
+        showConfigStatus('✅ 配置已保存', true);
+        setTimeout(() => {
+          closeConfigModal();
+        }, 1000);
+      } else {
+        showConfigStatus('保存失败，请重试', false);
+      }
     });
   }
 
