@@ -7,7 +7,7 @@
   const fileListEl = document.getElementById('file-list');
   const emptyTipEl = document.getElementById('empty-tip');
   const breadcrumbsEl = document.getElementById('breadcrumbs');
-  const goUpBtn = document.getElementById('go-up');
+  const refreshBtn = document.getElementById('refresh');
   const searchEl = document.getElementById('search');
 
   // 导入模块
@@ -152,16 +152,10 @@
     window.__hashChangeListenerBound = true;
   }
 
-  // 返回上级
-  goUpBtn.addEventListener('click', () => {
-    const relPath = getHashPath();
-    const parts = relPath.split('/').filter(Boolean);
-    if (parts.length === 0) {
-      setHashPath('/');
-    } else {
-      const parent = '/' + parts.slice(0, -1).join('/') + '/';
-      setHashPath(parent);
-    }
+  // 刷新当前目录
+  refreshBtn.addEventListener('click', () => {
+    console.log('🔄 手动刷新目录');
+    loadCurrentDirectory();
   });
 
   // 搜索过滤
