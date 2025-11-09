@@ -58,6 +58,7 @@
       const li = document.createElement('li');
       li.dataset.href = item.href;
       li.dataset.type = item.isDirectory ? 'dir' : 'file';
+      li.title = item.name;
 
       // 标签
       const tag = document.createElement('span');
