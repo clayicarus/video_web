@@ -125,7 +125,6 @@
     isLoading = true;
     
     try {
-      stopVideo();
       clearError();
 
       const relPath = getHashPath();

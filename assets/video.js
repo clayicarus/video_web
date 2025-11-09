@@ -49,6 +49,8 @@
 
   // 播放视频
   function playVideo(url, name) {
+    // 先停止当前正在播放的视频
+    stopVideo();
     clearError();
     currentFileEl.textContent = name;
     downloadLinkEl.href = url;
