@@ -28,12 +28,14 @@
   let progressInterval = null;
 
   // ========== 配置管理 ==========
-  const STORAGE_KEY = 'aria2_secret';
-  const ARIA2_CONFIG = {
+  const ARIA2_STATIC_CONFIG = {
     url: 'http://localhost:6800/jsonrpc',
-    secret: '',
     downloadRoot: "."
   };
+  const STORAGE_KEY = 'aria2_secret';
+  const ARIA2_CONFIG = {
+    secret: ''
+  }
 
   // 加载配置
   function loadConfig() {
@@ -81,7 +83,7 @@
         body: JSON.stringify(payload)
       };
       
-      const response = await fetch(ARIA2_CONFIG.url, request);
+      const response = await fetch(ARIA2_STATIC_CONFIG.url, request);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -386,7 +388,7 @@
       const options = {};
       
       // 计算完整的下载目录路径
-      let fullDownloadPath = ARIA2_CONFIG.downloadRoot;
+      let fullDownloadPath = ARIA2_STATIC_CONFIG.downloadRoot;
       
       if (dirPath && dirPath.trim()) {
         // 清理相对路径：去除前导/后缀斜杠
