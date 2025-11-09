@@ -23,7 +23,7 @@
   const ARIA2_CONFIG = {
     url: 'http://localhost:6800/jsonrpc',
     secret: '', // 如果需要密钥，在这里填写
-    downloadRoot: ".." + window.AppConfig.BROWSE_ROOT
+    downloadRoot: "."
   };
 
   // ========== RPC 调用 ==========
@@ -368,14 +368,6 @@
         options.out = filename.trim();
       }
 
-      console.log('📂 下载配置:', {
-        url,
-        downloadRoot: ARIA2_CONFIG.downloadRoot,
-        relativePath: dirPath,
-        fullPath: fullDownloadPath,
-        filename: filename || '(使用原文件名)'
-      });
-
       const gid = await rpcCall('aria2.addUri', [[url], options]);
       return { success: true, gid };
     } catch (err) {
@@ -406,13 +398,6 @@
     downloadPathInput.value = relativePath;
     downloadUrlInput.value = '';
     downloadFilenameInput.value = '';
-    
-    console.log('📂 打开下载对话框:', {
-      currentPath,
-      relativePath,
-      downloadRoot: ARIA2_CONFIG.downloadRoot,
-      fullPath: relativePath ? `${ARIA2_CONFIG.downloadRoot}/${relativePath}` : ARIA2_CONFIG.downloadRoot
-    });
     
     hideDownloadStatus();
     addDownloadModal.removeAttribute('hidden');
@@ -521,10 +506,6 @@
         
         // 启动进度监控
         startProgressMonitor();
-        
-        setTimeout(() => {
-          closeDownloadModal();
-        }, 2000);
       } else {
         showDownloadStatus('添加失败: ' + result.error, false);
       }
