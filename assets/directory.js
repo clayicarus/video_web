@@ -17,7 +17,12 @@
   // 解析 autoindex HTML
   function parseAutoIndex(html, baseAbsPath) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const links = Array.from(doc.querySelectorAll('a'));
+    
+    // 先找到文件列表容器（不同服务器可能使用不同的选择器）
+    const filesContainer = doc.querySelector('#files') || doc.querySelector('ul') || doc.querySelector('pre') || doc.body;
+    
+    // 只在容器内查找链接
+    const links = Array.from(filesContainer.querySelectorAll('a'));
     const items = [];
 
     for (const a of links) {
@@ -38,15 +43,46 @@
       }
 
       // 限制在 BROWSE_ROOT 下
+      const isParent = text === '..' || text === '../' || href === '../';
       if (!absPath.startsWith(BROWSE_ROOT)) {
-        const isParentLike = text === '..' || text === '../' || href === '../';
-        if (!isParentLike) continue;
+        if (!isParent) continue;
         absPath = BROWSE_ROOT;
       }
 
-      const isDir = absPath.endsWith('/');
+      // 判断是否为目录
+      let isDir = false;
+      
+      // 1. href 明确以 / 结尾
+      if (href.endsWith('/')) {
+        isDir = true;
+      }
+      // 2. 父目录链接
+      else if (isParent) {
+        isDir = true;
+      }
+      // 3. 检查文本内容中是否包含 / 后缀（有些服务器会在目录名后加 /）
+      else if (text.endsWith('/')) {
+        isDir = true;
+      }
+      // 4. 🎯 检查 <span class="size"> 子节点
+      //    目录的 size 为空或 "-"，文件有具体大小
+      else {
+        const sizeSpan = a.querySelector('span.size');
+        if (sizeSpan) {
+          const sizeText = sizeSpan.textContent.trim();
+          // size 为空或为 "-" 表示是目录，空字符串也是 null 值
+          if (!sizeText || sizeText === '-') {
+            isDir = true;
+          }
+        }
+      }
+      
+      // 确保目录路径以 / 结尾
+      if (isDir && !absPath.endsWith('/')) {
+        absPath += '/';
+      }
+      
       const relPath = isDir ? ensureTrailingSlash(absToRel(absPath)) : absToRel(absPath);
-      const isParent = text === '..' || text === '../' || href === '../';
 
       // 从路径中获取文件名
       let name;
