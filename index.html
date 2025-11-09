@@ -10,7 +10,6 @@
 <body>
   <header class="app-header">
     <div class="brand">我的网盘</div>
-    <nav id="breadcrumbs" class="breadcrumbs"></nav>
     <div class="spacer"></div>
     <span id="test-rpc-status" class="test-rpc-status" hidden></span>
     <button id="test-rpc-btn" class="test-rpc-btn" title="测试 Aria2 连接">🔗 测试连接</button>
@@ -36,6 +35,7 @@
         <input id="search" type="search" placeholder="搜索文件/目录..." autocomplete="off" />
         <button id="refresh" title="刷新当前目录">🔄</button>
       </div>
+      <nav id="breadcrumbs" class="breadcrumbs sidebar-breadcrumbs"></nav>
       
       <!-- 下载进度区域 -->
       <div id="download-progress-container" class="download-progress-container" hidden>
